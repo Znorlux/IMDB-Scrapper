@@ -81,7 +81,111 @@ class Graph:
 
         return most_frequent_actor, max_movie_count
     
+    def find_person_and_movie(self, name):
+        result = []
+        
+        if name in self.adj_list:
+            # Si el nombre es una película
+            if self.adj_list[name]['type'] == 'movie':
+                result.append("Película: " + name)
+                
+                # Obtener los actores, escritores y director de la película
+                actors = []
+                writers = []
+                director = ""
+                for neighbor in self.adj_list[name]['neighbors']:
+                    neighbor_attr = self.adj_list[neighbor]
+                    if neighbor_attr['type'] == 'actor':
+                        actors.append(neighbor)
+                    elif neighbor_attr['type'] == 'writer':
+                        writers.append(neighbor)
+                    elif neighbor_attr['type'] == 'director':
+                        director = neighbor
+                
+                if actors:
+                    result.append("Actores: " + ", ".join(actors))
+                else:
+                    result.append("No se encontraron actores para la película")
+                
+                if writers:
+                    result.append("Escritores: " + ", ".join(writers))
+                else:
+                    result.append("No se encontraron escritores para la película")
 
+                if director:
+                    result.append("Director: " + director)
+                else:
+                    result.append("No se encontró director para la película")
+            else:  # Si el nombre corresponde a un actor, escritor o director
+                result.append("Persona: " + name)
+                
+                # Obtener las películas en las que la persona ha actuado, escrito o dirigido
+                movies = []
+                for neighbor in self.adj_list[name]['neighbors']:
+                    neighbor_attr = self.adj_list[neighbor]
+                    if neighbor_attr['type'] == 'movie':
+                        movies.append(neighbor)
+                if movies:
+                    result.append("Películas: " + ", ".join(movies))
+                else:
+                    result.append("No se encontraron películas para la persona")
+        else:
+            result.append("No se encontró ninguna persona o película con ese nombre")
+
+        return result
+
+    def relation_V1_V2(self, v1, v2):
+        # Verificar si los nodos v1 y v2 existen en el grafo
+        if v1 not in self.adj_list or v2 not in self.adj_list:
+            return "Al menos uno de los nodos no existe en el grafo"
+
+        # Verificar si v2 es un vecino directo de v1
+        if v2 in self.adj_list[v1]['neighbors']:
+            return f"{v1} y {v2} están directamente relacionados en el grafo"
+
+        # Buscar una ruta de relación indirecta
+        visited = set()
+        queue = [(v1, [])]  # Cola para realizar
+
+        while queue:
+            current_node, path = queue.pop(0)
+
+            # Si se encuentra v2, se devuelve la ruta de relación indirecta
+            if current_node == v2:
+                return f"Se encontró una ruta de relación indirecta entre {v1} y {v2}: {' -> '.join(path + [current_node])}"
+
+            visited.add(current_node)
+            neighbors = self.get_neighbors(current_node)
+
+            for neighbor in neighbors:
+                if neighbor not in visited:
+                    queue.append((neighbor, path + [current_node]))
+
+        # No se encontró ninguna relación entre v1 y v2
+        return f"No se encontró una relación entre {v1} y {v2} en el grafo"
+
+    def find_person_movies_and_relationships(self, person):
+        result = []
+
+        if person in self.adj_list:
+            result.append("Persona: " + person)
+
+            # Obtener las películas en las que la persona ha actuado, escrito o dirigido
+            movies = []
+            for neighbor in self.adj_list[person]['neighbors']:
+                if 'type' in self.adj_list[neighbor]:
+                    neighbor_attr = self.adj_list[neighbor]
+                    if neighbor_attr['type'] == 'movie':
+                        movies.append(neighbor)
+            if movies:
+                result.append("Películas: " + ", ".join(movies))
+            else:
+                result.append("No se encontraron películas para la persona")
+        else:
+            result.append("No se encontró ninguna persona con ese nombre")
+
+        return result
+    
 with open("movies.json", "r") as json_file:
     data = json.load(json_file)
 
@@ -150,3 +254,17 @@ if os.path.exists("graph.graphml"):
 # Guardar el grafo en formato GraphML
 nx.write_graphml(G, "graph.graphml")
 '''
+#search_name = "Charles Chaplin"
+search_name = input("Name of movie, director, writer or movie: ")
+print(g.find_person_and_movie(search_name))
+
+#v1 = "Charles Chaplin"
+#v2 = "The Gold Rush"
+v1 = input("Name of V1:")
+v2 = input("Name of V2:")
+print(g.relation_V1_V2(v1, v2))
+
+#person = "Charles Chaplin"
+person = input("Ingrese el nombre de la persona: ")
+movies_info = g.find_person_movies_and_relationships(person)
+print("\n".join(movies_info))

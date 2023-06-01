@@ -62,7 +62,6 @@ if __name__ == "__main__":
             #print("\nDirector:")
             #print(director)
 
-
             writers_list = soup.find_all('a', class_='ipc-metadata-list-item__list-content-item')
             writers = []
             for writer in writers_list[1:-1]:
