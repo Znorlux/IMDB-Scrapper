@@ -1,7 +1,8 @@
-from Scrapper import Movie
+from OldScrapper import Movie
 import json
 import networkx as nx
 import os
+
 class Graph:
     def __init__(self, directed=True):
         self.adj_list = {}
@@ -165,25 +166,25 @@ class Graph:
         return f"No se encontró una relación entre {v1} y {v2} en el grafo"
 
     def find_person_movies_and_relationships(self, person):
-        result = []
-
+        result = ()
+    
         if person in self.adj_list:
-            result.append("Persona: " + person)
-
+            result += ("Persona: " + person,)
+    
             # Obtener las películas en las que la persona ha actuado, escrito o dirigido
-            movies = []
+            movies = set()
             for neighbor in self.adj_list[person]['neighbors']:
                 if 'type' in self.adj_list[neighbor]:
                     neighbor_attr = self.adj_list[neighbor]
                     if neighbor_attr['type'] == 'movie':
-                        movies.append(neighbor)
+                        movies.add(neighbor)
             if movies:
-                result.append("Películas: " + ", ".join(movies))
+                result += ("Películas: " + ", ".join(movies),)
             else:
-                result.append("No se encontraron películas para la persona")
+                result += ("No se encontraron películas para la persona",)
         else:
-            result.append("No se encontró ninguna persona con ese nombre")
-
+            result += ("No se encontró ninguna persona con ese nombre",)
+    
         return result
     
 with open("movies.json", "r") as json_file:
@@ -221,50 +222,77 @@ for movie in movie_list:
         g.add_edge(movie.title, writer)
         g.add_edge(writer, movie.title)
 
-most_frequent_actor, movie_count = g.find_most_frequent_actor()
-print("El actor que ha actuado en más películas es:", most_frequent_actor)
-print("Número de películas en las que actuó:", movie_count)
+def save_graph():
+    # Crear el grafo de Networkx
+    G = nx.Graph()
+    for node, attr in g.adj_list.items():
+        G.add_node(node, **attr)
+        for neighbor in attr['neighbors']:
+            G.add_edge(node, neighbor)
 
-print()
+    # Convertir los atributos a cadenas de texto
+    for node in G.nodes:
+        attr = G.nodes[node]
+        for key, value in attr.items():
+            if isinstance(value, (list, type)):
+                attr[key] = str(value)
 
-most_frequent_director, director_movies = g.find_most_frequent_director()
-print("El director que ha dirigido en más películas es:", most_frequent_director)
-print("El director que ha dirigido en más películas es:", director_movies)
+    if os.path.exists("graph.graphml"):
+        os.remove("graph.graphml")
 
-print(g.get_neighbors("Charles Chaplin"))
+    # Guardar el grafo en formato GraphML
+    nx.write_graphml(G, "graph.graphml")
 
-'''
-# Crear el grafo de Networkx
-G = nx.Graph()
-for node, attr in g.adj_list.items():
-    G.add_node(node, **attr)
-    for neighbor in attr['neighbors']:
-        G.add_edge(node, neighbor)
+def user_menu():
 
-# Convertir los atributos a cadenas de texto
-for node in G.nodes:
-    attr = G.nodes[node]
-    for key, value in attr.items():
-        if isinstance(value, (list, type)):
-            attr[key] = str(value)
+    print("\nBienvenido al grafo de peliculas de IMDB!")
+    print("Puedes realizar las siguientes acciones:")
+    print('''
+1. Guardar el grafo en archiv .GRAPHML.
+2. Buscar a una persona o película por nombre.
+3. Conocer el tipo de una persona, si existe en el grafo: actriz, director o escritor.
+4. Conocer la relación directa o indirecta de dos nodos v1 y v2.
+5. Conocer el actor que ha actuado en más películas.
+6. Conocer el director que más películas ha dirigido.
+7. Conocer si todas las películas en las que ha trabajado una persona y su relación con la misma.                                                    
+8. Salir.
+    ''')
+    while True:
+        option = input("\nIngresa tu opción: ")
+        if option == "1":
+            save_graph()
+            print("El grafo se ha guardado correctamente! Puedes verlo en Cytoscape")
 
-if os.path.exists("graph.graphml"):
-    os.remove("graph.graphml")
+        elif option == "2":
+            name = input("Ingresa el nombre de la pelicula, director, escritor o actor que quieres buscar: ")
+            print(g.find_person_and_movie(name))
 
-# Guardar el grafo en formato GraphML
-nx.write_graphml(G, "graph.graphml")
-'''
-#search_name = "Charles Chaplin"
-search_name = input("Name of movie, director, writer or movie: ")
-print(g.find_person_and_movie(search_name))
+        elif option == "3":
+            name = input("Ingresa el nombre de la persona: ")
+            print(g.get_neighbors(name))
 
-#v1 = "Charles Chaplin"
-#v2 = "The Gold Rush"
-v1 = input("Name of V1:")
-v2 = input("Name of V2:")
-print(g.relation_V1_V2(v1, v2))
+        elif option == "4":
+            v1 = input("Ingresa el primer nodo (v1): ")
+            v2 = input("Ingresa el segundo nodo (v2): ")
+            print(g.relation_V1_V2(v1,v2))
 
-#person = "Charles Chaplin"
-person = input("Ingrese el nombre de la persona: ")
-movies_info = g.find_person_movies_and_relationships(person)
-print("\n".join(movies_info))
+        elif option == "5":
+            most_frequent_actor, movie_count = g.find_most_frequent_actor()
+            print("El actor que ha actuado en más películas es:", most_frequent_actor)
+            print("Número de películas en las que actuó:", movie_count)
+
+        elif option == "6":
+            most_frequent_director, director_movies = g.find_most_frequent_director()
+            print("El director que ha dirigido en más películas es:", most_frequent_director)
+            print("Numero de peliculas que ha dirigido :", director_movies)
+
+        elif option == "7":
+            person = input("Ingrese el nombre de la persona: ")
+            movies_info = g.find_person_movies_and_relationships(person)
+            print("\n".join(movies_info))
+            
+        elif option == "8":
+            break
+        else:
+            print("Ingresa un valor validoo!")
+user_menu()
