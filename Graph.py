@@ -1,4 +1,4 @@
-from OldScrapper import Movie
+from Scrapper import Movie
 import json
 import networkx as nx
 import os
@@ -10,22 +10,40 @@ class Graph:
 
     def get_neighbors(self, node_label):
         if node_label in self.adj_list:
-            return self.adj_list[node_label]
+            node_data = self.adj_list[node_label]
+            node_type = node_data['type']
+            neighbors = node_data['neighbors']
+            print(f"Node: {node_label}")
+            print(f"Type: {node_type}")
+            print(f"Neighbors: {neighbors}")
+            return node_data
         else:
             return []
 
     def add_vertex(self, node_label, node_type=None):
         if node_label not in self.adj_list:
+            #los tipos del nodo serán Movie, Actor o Writer
             self.adj_list[node_label] = {'type': node_type, 'neighbors': []}
-
+            '''
+            Estructura de un nodo
+            nombre_del_nodo: {tipo:vecinos}
+            Ejemplo:
+            pelicula1: {
+                'type': Movie,
+                'neighbors': [Actor1, Actor2, Escritor1, ...]
+                }
+            '''
     def add_edge(self, v1, v2):
+        #Verificamos que los nodos si estén presente en la lista de adyacencia, si no estan, entonces se agregan
         if v1 not in self.adj_list:
             self.add_vertex(v1)
         if v2 not in self.adj_list:
             self.add_vertex(v2)
 
+        #le agregamos a v1 un nuevo vecino el cual será v2
         self.adj_list[v1]['neighbors'].append(v2)
         if not self.directed:
+            #si el grafo no es dirigido, entonces tambien le agregaremos a v2 de vecino v1 
             self.adj_list[v2]['neighbors'].append(v1)
 
     def DFS(self, start, visited=None):
@@ -43,26 +61,34 @@ class Graph:
         return visited
 
     def find_most_frequent_actor(self):
-        actor_counts = {}
-        for node, attr in self.adj_list.items():
-            if attr['type'] == 'actor':
-                movies = set()  # Conjunto para almacenar las películas únicas en las que actúa el actor
-                for neighbor in attr['neighbors']:
+        actor_counts = {} #En este diccionario guardaremos la cantidad de peliculas por actor
+
+        #iteramos sobre los ELEMENTOS de la lista de adyacencia
+        for node, attr in self.adj_list.items():#node:attr
+            if attr['type'] == 'actor':#En este caso estamos buscamos los nodos de actores
+                movies = set()  # Conjunto para almacenar las películas únicas en las que actúa el actor (hay veces que se repiten)
+
+                for neighbor in attr['neighbors']:#iteramos sobre la lista de vecinos del nodo actual
                     neighbor_attr = self.adj_list[neighbor]
+
+                    #ahora por cada vecino del nodo actual, solo buscaremos los que sean peliculas
                     if neighbor_attr['type'] == 'movie':
-                        movies.add(neighbor)
-                movie_count = len(movies)
-                actor_counts[node] = movie_count
+                        movies.add(neighbor)#cada uno de los vecinos que sean peliculas, los meteremos al set de movies
+
+                movie_count = len(movies)#contamos la cantidad de peliculas
+                actor_counts[node] = movie_count 
+                #en este diccionario nos quedarán muchisimos elementos que seran actor:n_peliculas
 
         if not actor_counts:
             return None, 0
-
+        #finalmente con la funcion max buscamos la llave (nombre del actor) que tenga como value el numero mas grande
         most_frequent_actor = max(actor_counts, key=actor_counts.get)
-        max_movie_count = actor_counts[most_frequent_actor]
+        max_movie_count = actor_counts[most_frequent_actor]#Aqui solamente guardamos el value del actor que más # de peliculas tiene
 
         return most_frequent_actor, max_movie_count
     
     def find_most_frequent_director(self):
+        #La logica de este metodo es la misma que la de buscar al actor, solo cambia el tipo de nodo que buscamos
         director_counts = {}
         for node, attr in self.adj_list.items():
             if attr['type'] == 'director':
@@ -120,12 +146,13 @@ class Graph:
             else:  # Si el nombre corresponde a un actor, escritor o director
                 result.append("Persona: " + name)
                 
+                #caso en el que sea una persona (actor, escritor o director)
                 # Obtener las películas en las que la persona ha actuado, escrito o dirigido
-                movies = []
+                movies = set()
                 for neighbor in self.adj_list[name]['neighbors']:
                     neighbor_attr = self.adj_list[neighbor]
                     if neighbor_attr['type'] == 'movie':
-                        movies.append(neighbor)
+                        movies.add(neighbor)
                 if movies:
                     result.append("Películas: " + ", ".join(movies))
                 else:
@@ -269,7 +296,7 @@ def user_menu():
 
         elif option == "3":
             name = input("Ingresa el nombre de la persona: ")
-            print(g.get_neighbors(name))
+            g.get_neighbors(name)
 
         elif option == "4":
             v1 = input("Ingresa el primer nodo (v1): ")
