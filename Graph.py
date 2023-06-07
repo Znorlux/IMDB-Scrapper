@@ -5,18 +5,13 @@ import os
 
 class Graph:
     def __init__(self, directed=True):
-        self.adj_list = {}
+        self.adj_list = {} 
         self.directed = directed
 
     def get_neighbors(self, node_label):
         if node_label in self.adj_list:
             node_data = self.adj_list[node_label]
-            node_type = node_data['type']
-            neighbors = node_data['neighbors']
-            print(f"Node: {node_label}")
-            print(f"Type: {node_type}")
-            print(f"Neighbors: {neighbors}")
-            return node_data
+            return self.adj_list[node_label]['neighbors']
         else:
             return []
 
@@ -46,7 +41,7 @@ class Graph:
             #si el grafo no es dirigido, entonces tambien le agregaremos a v2 de vecino v1 
             self.adj_list[v2]['neighbors'].append(v1)
 
-    def DFS(self, start, visited=None):
+    def DFS2(self, start, visited=None):
         if visited is None:
             visited = []
 
@@ -59,6 +54,18 @@ class Graph:
                 for n in neighbors:
                     self.DFS(n, visited)
         return visited
+    
+    def find_person_type(self, node_label):
+        if node_label in self.adj_list:
+            node_data = self.adj_list[node_label]
+            node_type = node_data['type']
+            neighbors = node_data['neighbors']
+            print(f"Name: {node_label}")
+            print(f"Type: {node_type}")
+            print(f"Neighbors: {neighbors}")
+        else:
+            print("No se encontró a la persona buscada")
+
 
     def find_most_frequent_actor(self):
         actor_counts = {} #En este diccionario guardaremos la cantidad de peliculas por actor
@@ -198,7 +205,7 @@ class Graph:
         if person in self.adj_list:
             result += ("Persona: " + person,)
     
-            # Obtener las películas en las que la persona ha actuado, escrito o dirigido
+            # Obtenemos las películas en las que la persona ha actuado, escrito o dirigido
             movies = set()
             for neighbor in self.adj_list[person]['neighbors']:
                 if 'type' in self.adj_list[neighbor]:
@@ -296,7 +303,7 @@ def user_menu():
 
         elif option == "3":
             name = input("Ingresa el nombre de la persona: ")
-            g.get_neighbors(name)
+            g.find_person_type(name)
 
         elif option == "4":
             v1 = input("Ingresa el primer nodo (v1): ")
